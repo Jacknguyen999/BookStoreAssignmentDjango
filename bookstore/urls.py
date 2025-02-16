@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.shortcuts import render
 
 def home(request):
-    return render(request, 'index.html',{'user' :request.user})
+    return render(request, 'index.html', {'user': request.user})
 
 urlpatterns = [
     path('admin/', admin.site.urls),

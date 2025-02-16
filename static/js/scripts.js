@@ -1,27 +1,9 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Load books from Django API
-    fetch("/api/book/books/")
-        .then(response => response.json())
-        .then(data => {
-            let bookList = document.getElementById("book-list");
-            data.forEach(book => {
-                let bookItem = document.createElement("div");
-                bookItem.className = "book-item";
-                bookItem.innerHTML = `
-                    <h3>${book.title}</h3>
-                    <p>Author: ${book.author}</p>
-                    <p>Price: $${book.price}</p>
-                    <button onclick="addToCart(${book.id})">Add to Cart</button>
-                `;
-                bookList.appendChild(bookItem);
-            });
-        });
-
-    // Fetch cart information
+    // Fetch cart information only
     fetchCart();
 });
 
-// Get CSRF token from cookie
+// Get CSRF token
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -72,18 +54,23 @@ function fetchCart() {
 }
 
 // Add to cart function
-function addToCart(bookId) {
+function addToCart(bookId, button) {
+    const card = button.closest('.book-card');
+    const quantityInput = card.querySelector('.quantity-input');
+    const quantity = parseInt(quantityInput.value);
+    
+    const csrftoken = getCookie('csrftoken');
+    
     fetch("/api/cart/cartitems/", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Authorization': `Bearer ${localStorage.getItem('token')}` // if you're using token auth
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify({
-            "book_id": bookId,
-            "quantity": 1
+            "book": bookId,  // Changed from book_id to book
+            "quantity": quantity
         })
     })
     .then(response => {
@@ -93,12 +80,15 @@ function addToCart(bookId) {
         return response.json();
     })
     .then(data => {
-        alert("Book added to cart!");
-        fetchCart();
+        console.log('Success:', data);
+        // Show success message
+        alert('Book added to cart successfully!');
+        // Reset quantity to 1
+        quantityInput.value = 1;
     })
-    .catch(error => {
+    .catch((error) => {
         console.error('Error:', error);
-        alert("Error adding book to cart. Please try again.");
+        alert('Error adding book to cart. Please try again.');
     });
 }
 
@@ -134,4 +124,21 @@ function handleLogout(event) {
     
     // Redirect to logout URL
     window.location.href = event.target.closest('a').href;
+}
+
+// Quantity control functions
+function incrementQuantity(button) {
+    const input = button.parentElement.querySelector('.quantity-input');
+    const currentValue = parseInt(input.value);
+    if (currentValue < 99) {
+        input.value = currentValue + 1;
+    }
+}
+
+function decrementQuantity(button) {
+    const input = button.parentElement.querySelector('.quantity-input');
+    const currentValue = parseInt(input.value);
+    if (currentValue > 1) {
+        input.value = currentValue - 1;
+    }
 }

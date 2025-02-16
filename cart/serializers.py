@@ -8,8 +8,16 @@ class BookSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'author', 'price']
 
 class CartItemSerializer(serializers.ModelSerializer):
-    book = BookSerializer()
+    book = BookSerializer(read_only=True)
+    book_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = CartItem
-        fields = ['id', 'book', 'quantity', 'added_at']
+        fields = ['id', 'book', 'book_id', 'quantity', 'added_at']
+        read_only_fields = ['customer']
+
+    def create(self, validated_data):
+        book_id = validated_data.pop('book_id')
+        book = Book.objects.get(id=book_id)
+        validated_data['book'] = book
+        return super().create(validated_data)
